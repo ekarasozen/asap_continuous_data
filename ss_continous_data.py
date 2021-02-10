@@ -10,10 +10,8 @@ import ss_functions as func
 filename = input("Parameters file: ")
 exec(open(filename).read())
 st = read(event_file)
-stp = st.copy()
-print(stp)
+stp = st.copy() #processed stream
 stp.clear()
-print(stp)
 nos = len(st)
 for s in range(nos): #station loop
     t = st[s].stats.starttime # does this stay here or moved to second loop? does it matter?
