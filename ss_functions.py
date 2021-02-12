@@ -28,11 +28,11 @@ def do_subtraction(amp_Xd, amp_Xn, a, b):
     amp_Xp = amp_Xd - (alpha*amp_Xna)
     return amp_Xp, alpha, rho, a, b
 
-def do_iwavelet(Xd,amp_Xp,trp,scales_d,dt,dj): #wavelet parameters (scales, dt, dj are taken from do_wavelet outputs)
+def do_inv_wavelet(Xd,amp_Xp,trp,scales_d,dt,dj): #wavelet parameters (scales, dt, dj are taken from do_wavelet outputs)
     phase_Xd = np.angle(Xd) #phase spectrum of the processed signal, from degraded
     Xp = amp_Xp*(np.exp(1.j*phase_Xd)) #combine phase and amplitude spectrum of the processed signal
     trp.data = pycwt.icwt(Xp, scales_d, dt, dj, wavelet='morlet') #inverse cwt to compute processed signal 
-    print('----> maximum imaginary value in "processed signal" is: ', np.max(np.imag(trp.data)))
+    print('----> maximum imaginary value in "processed signal" is: ', np.max(np.imag(trp.data))) #need to explain this 
     if np.max(np.imag(trp.data)) == 0:
         trp.data = np.real(trp.data)
     else: #this needs explanation & testing.
