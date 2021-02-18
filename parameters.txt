@@ -1,3 +1,4 @@
-event_file = "../keskin_data/2018/BR10*.064.00.00.00"
-output_file = "results/keskin_processed_2018_064"
+event_file = "../keskin_data/2018/BR10*.065.00.00.00"
+output_name = "keskin_2018_065"
+outpath = '2018/65/'
 tw = 5*60 # time window for the signal to be processed & noise estimate

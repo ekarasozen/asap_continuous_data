@@ -1,5 +1,4 @@
-from obspy import read
-from obspy import Stream
+from obspy import read, Stream
 import numpy as np
 import os
 import sys
@@ -9,31 +8,38 @@ filename = input("Parameters file: ")
 exec(open(filename).read())
 st = read(event_file)
 stp = Stream() #processed stream
+strs = Stream() #residual stream
 nos = len(st)
+if not os.path.exists(outpath):
+   os.makedirs(outpath)
+freqs_array = np.empty((233,)) #233 is freq number, not sure how to hardwire this from do_wavelet
 for s in range(nos): #station loop
     t = st[s].stats.starttime 
     inc = (st[s].stats.npts/st[s].stats.sampling_rate)/(tw) #calculate how many 5 minute time increments are needed for this data 
     inc = inc/24 #for now, 1 hour, comment out for the entire data
+    noise_estimate = np.empty((233,0)) #233 is freq number, not sure how to hardwire this from do_wavelet
     for i in range(0, int(inc)): # 5 minutes increments
         trd = st[s].copy() #[d]egraded data (input)
-        trn = st[s].copy() #[n]oise signal (estimated)
-        trd.trim((t + (i*tw)), (t + ((i+1)*tw))) # 5 minutes of signal to perform spectral subtraction on
-        trn.trim((t + (i*tw)), (t + ((i+1)*tw))) # 5 minutes of signal to estimate noise from
-        trn.detrend("linear")
-        trn.detrend("demean")
+        trd.trim((t + (i*tw)), (t + ((i+1)*tw) - trd.stats.delta)) # 5 minutes of signal to perform spectral subtraction on, stat.delta is necessary to have equal 6000 pts trimmed data. 
         trp = trd.copy() #[p]rocessed signal (output)
-        amp_Xd, amp_Xn, Xd, scales_d, dt, dj = func.do_wavelet(trd,trn) #cwt
-        amp_Xp, alpha, rho, a, b = func.do_subtraction(amp_Xd,amp_Xn, 0.75, 0.005) # spectral subtraction
-        trp.data = func.do_inv_wavelet(Xd,amp_Xp,trp,scales_d,dt,dj)      
+        trrs = trd.copy() #residual data
+        amp_Xd, Xd, freqs, scales, dt, dj = func.do_wavelet(trd) #cwt
+        amp_Xp, amp_Xna, alpha, rho, a, b = func.do_subtraction(amp_Xd) # spectral subtraction
+        trp.data = func.do_inv_wavelet(Xd,amp_Xp,trp,scales,dt,dj)      
+        trrs.data = trd.data-trp.data
+        noise_estimate = np.concatenate((noise_estimate, amp_Xna), axis=1)
         #save trimmed files for plotting, these following lines will be deleted in the final version of the code. 
-        outpath = 'results/'   #save processed waveforms
-        if not os.path.exists(outpath):
-           os.makedirs(outpath)
-        trn.write(outpath + trn.stats.station + "." + trn.stats.channel + "." + str(trn.stats.starttime.year) + "." + str(trn.stats.starttime.month) + "." + str(trn.stats.starttime.day) +
-        "." + str(trn.stats.starttime.hour) + "." + str(trn.stats.starttime.minute) + "." + str(i) +".noise", format="MSEED")
-        trp.write(outpath + trp.stats.station + "." + trp.stats.channel + "." + str(trp.stats.starttime.year) + "." + str(trp.stats.starttime.month) + "." + str(trp.stats.starttime.day) +
-        "." + str(trp.stats.starttime.hour) + "." + str(trp.stats.starttime.minute) + "." + str(i) +".processed", format="MSEED")
+        ##trrs.write(outpath + output_name + '_' + trrs.stats.station + '_' + str(i) + "_residual", format="MSEED")
+        ##trp.write(outpath + output_name + '_' +trp.stats.station + '_' + str(i) + "_processed", format="MSEED")
+        ##np.savetxt(outpath + output_name + '_' + trp.stats.station + '_' + str(i)  + '_noise_estimate', amp_Xna, delimiter=',', newline="\n")  
         stp += trp
-    stp.sort(['station']) #otherwise BR106 becomes the first trace in the stream
+        strs += trrs
     stp.merge(method=1)
-stp.write(output_file, format="MSEED")
+    stp.sort(['station']) #otherwise BR106 becomes the first trace in the stream
+    strs.merge(method=1)
+    strs.sort(['station']) #otherwise BR106 becomes the first trace in the stream
+    np.save(outpath + 'noise_estimate_' + trp.stats.station, noise_estimate)  
+freqs_array = freqs
+np.save(outpath + 'freqs_array_noise_estimate', freqs_array)
+stp.write(outpath + output_name + '_processed', format="MSEED")
+strs.write(outpath + output_name + '_residual', format="MSEED")
