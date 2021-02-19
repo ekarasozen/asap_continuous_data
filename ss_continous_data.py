@@ -10,13 +10,15 @@ st = read(event_file)
 stp = Stream() #processed stream
 strs = Stream() #residual stream
 nos = len(st)
+st.detrend("linear")
+st.detrend("demean")
 if not os.path.exists(outpath):
    os.makedirs(outpath)
 freqs_array = np.empty((233,)) #233 is freq number, not sure how to hardwire this from do_wavelet
 for s in range(nos): #station loop
     t = st[s].stats.starttime 
     inc = (st[s].stats.npts/st[s].stats.sampling_rate)/(tw) #calculate how many 5 minute time increments are needed for this data 
-    inc = inc/24 #for now, 1 hour, comment out for the entire data
+    #inc = inc/24 #for now, 1 hour, comment out for the entire data
     noise_estimate = np.empty((233,0)) #233 is freq number, not sure how to hardwire this from do_wavelet
     for i in range(0, int(inc)): # 5 minutes increments
         trd = st[s].copy() #[d]egraded data (input)

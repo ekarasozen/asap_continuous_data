@@ -13,8 +13,8 @@ if not os.path.exists(outpath):
    os.makedirs(outpath)
 
 # Load data
-#st = read("../keskin_data/2018/*BR10**.065.00.00.00")
-st = read("results/keskin_2018_065_processed")
+st = read("../keskin_data/2018/*BR10**.065.00.00.00")
+#st = read(outpath + "keskin_2018_065_processed")
 
 # Set coordinates for all 5 channels
 st[0].stats.coordinates = AttribDict({
@@ -58,7 +58,7 @@ out = array_processing(st, **kwargs)
 
 #Save output as a numpy array
 ap_params = out[:, :]
-np.save(outpath + 'ap_parameters', ap_params) #Column orders: Time, Rel. Power, Abs. Power, BAZ, Slowness
+np.save(outpath + 'ap_parameters_degraded', ap_params) #Column orders: Time, Rel. Power, Abs. Power, BAZ, Slowness
 #Save output as a MSEED 
 rp = ap_params[:,1]
 ap = ap_params[:,2]
@@ -73,8 +73,8 @@ baz_stats['starttime'] = stime
 slw_stats = {'network': '', 'station': 'SLWN', 'location': '', 'channel': '', 'npts': len(slw), 'sampling_rate': 20, 'mseed': {'dataquality': 'D'}}
 slw_stats['starttime'] = stime
 stap = Stream([Trace(data=rp, header=rp_stats), Trace(data=ap, header=ap_stats), Trace(data=baz, header=baz_stats), Trace(data=slw, header=slw_stats)])
-stap.write(outpath + "array_parameters.mseed", format='MSEED', encoding="FLOAT64")
-stap = read(outpath + "array_parameters.mseed")
+stap.write(outpath + "array_parameters_degraded.mseed", format='MSEED', encoding="FLOAT64")
+stap = read(outpath + "array_parameters_degraded.mseed")
 
 
 # Plot
@@ -94,7 +94,7 @@ fig1.suptitle('Keskin Array %s' % (stime.strftime('%Y-%m-%d'), ))
 fig1.subplots_adjust(left=0.15, top=0.95, right=0.95, bottom=0.2, hspace=0)
 fig1.autofmt_xdate()
 plt.draw()
-fig1.savefig(outpath + 'array_parameters_scatter.png', bbox_inches='tight')
+fig1.savefig(outpath + 'array_parameters_scatter_plot_degraded.png', bbox_inches='tight')
 
 #Plot array parameter mseed data
 fig2 = plt.figure(figsize=(8,8))
@@ -112,6 +112,6 @@ for i in range(len(stap)):
 fig2.autofmt_xdate()
 plt.tight_layout()
 plt.draw()
-fig2.savefig(outpath + 'array_parameters_mseed.png', bbox_inches='tight')
+fig2.savefig(outpath + 'array_parameters_mseed_plot_degraded.png', bbox_inches='tight')
 
 
