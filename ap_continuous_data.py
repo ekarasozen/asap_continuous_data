@@ -8,14 +8,16 @@ from obspy.imaging.cm import obspy_sequential
 from obspy.signal.array_analysis import array_processing
 import os
 
-outpath = '2018/65/'   #save processed waveforms
+outpath = '2018/90/'   #save processed waveforms
 if not os.path.exists(outpath):
    os.makedirs(outpath)
 
 # Load data
-st = read("../keskin_data/2018/*BR10**.065.00.00.00")
-#st = read(outpath + "keskin_2018_065_processed")
-
+#st = read("../keskin_data/2018/*BR10**.090.00.00.00")
+st = read(outpath + "ss_prcs_2018_090.mseed")
+day = "_2018_090"
+#dtype =  "dgrd"
+dtype =  "prcs"
 # Set coordinates for all 5 channels
 st[0].stats.coordinates = AttribDict({
     'latitude': 39.725346,
@@ -48,9 +50,9 @@ etime = st[0].stats.endtime
 #etime = stime + 61 #comment out to test minor edits quickly
 #st.trim((stime), (stime + (1*1*62)) - st[0].stats.delta) #comment out to test minor edits quickly
 kwargs = dict(
-   sll_x=-3.0, slm_x=3.0, sll_y=-3.0, slm_y=3.0, sl_s=0.03,    # slowness grid: X min, X max, Y min, Y max, Slow Step
-   win_len=1.0, win_frac=0.05,    # sliding window properties
-   frqlow=1, frqhigh=3, prewhiten=0,    # frequency properties
+   sll_x=-0.5, slm_x=0.5, sll_y=-0.5, slm_y=0.5, sl_s=0.005,    # slowness grid:   min,   max, Y min, Y max, Slow Step
+   win_len=6.0, win_frac=0.083333334,    # every 0.5 sec
+   frqlow=0.5, frqhigh=6, prewhiten=0,    # frequency properties
    semb_thres=-1e9, vel_thres=-1e9, timestamp='mlabday',    # restrict output
    stime=stime, etime=etime, 
    method=0) #the method to use 0 == bf, 1 == capon
@@ -58,24 +60,26 @@ out = array_processing(st, **kwargs)
 
 #Save output as a numpy array
 ap_params = out[:, :]
-np.save(outpath + 'ap_parameters_degraded', ap_params) #Column orders: Time, Rel. Power, Abs. Power, BAZ, Slowness
+np.save(outpath + 'ap_' + dtype + day, ap_params) #Column orders: Time, Rel. Power, Abs. Power, BAZ, Slowness
 #Save output as a MSEED 
 rp = ap_params[:,1]
 ap = ap_params[:,2]
 baz = ap_params[:,3]
 slw = ap_params[:,4]
-rp_stats = {'network': '', 'station': 'R.Pw.', 'location': '', 'channel': '', 'npts': len(rp), 'sampling_rate': 20, 'mseed': {'dataquality': 'D'}}
+#PRCS
+#DGRD
+rp_stats = {'network': '', 'station': 'PRCS', 'location': '', 'channel': 'rpw', 'npts': len(rp), 'sampling_rate': 2, 'mseed': {'dataquality': 'D'}}
 rp_stats['starttime'] = stime
-ap_stats = {'network': '', 'station': 'A.Pw.', 'location': '', 'channel': '', 'npts': len(ap), 'sampling_rate': 20, 'mseed': {'dataquality': 'D'}}
+ap_stats = {'network': '', 'station': 'PRCS', 'location': '', 'channel': 'apw', 'npts': len(ap), 'sampling_rate': 2, 'mseed': {'dataquality': 'D'}}
 ap_stats['starttime'] = stime
-baz_stats = {'network': '', 'station': 'BAZ', 'location': '', 'channel': '', 'npts': len(baz), 'sampling_rate': 20, 'mseed': {'dataquality': 'D'}}
+baz_stats = {'network': '', 'station': 'PRCS', 'location': '', 'channel': 'baz', 'npts': len(baz), 'sampling_rate': 2, 'mseed': {'dataquality': 'D'}}
 baz_stats['starttime'] = stime
-slw_stats = {'network': '', 'station': 'SLWN', 'location': '', 'channel': '', 'npts': len(slw), 'sampling_rate': 20, 'mseed': {'dataquality': 'D'}}
+slw_stats = {'network': '', 'station': 'PRCS', 'location': '', 'channel': 'slw', 'npts': len(slw), 'sampling_rate': 2, 'mseed': {'dataquality': 'D'}}
 slw_stats['starttime'] = stime
 stap = Stream([Trace(data=rp, header=rp_stats), Trace(data=ap, header=ap_stats), Trace(data=baz, header=baz_stats), Trace(data=slw, header=slw_stats)])
-stap.write(outpath + "array_parameters_degraded.mseed", format='MSEED', encoding="FLOAT64")
-stap = read(outpath + "array_parameters_degraded.mseed")
-
+stap.write(outpath + "ap_" + dtype + day + '.mseed', format='MSEED', encoding="FLOAT64")
+stap = read(outpath + "ap_" + dtype + day + '.mseed')
+print(stap)
 
 # Plot
 fig1 = plt.figure()
@@ -94,7 +98,7 @@ fig1.suptitle('Keskin Array %s' % (stime.strftime('%Y-%m-%d'), ))
 fig1.subplots_adjust(left=0.15, top=0.95, right=0.95, bottom=0.2, hspace=0)
 fig1.autofmt_xdate()
 plt.draw()
-fig1.savefig(outpath + 'array_parameters_scatter_plot_degraded.png', bbox_inches='tight')
+fig1.savefig(outpath + 'ap_' + dtype + day + '_scatter.png', bbox_inches='tight')
 
 #Plot array parameter mseed data
 fig2 = plt.figure(figsize=(8,8))
@@ -112,6 +116,5 @@ for i in range(len(stap)):
 fig2.autofmt_xdate()
 plt.tight_layout()
 plt.draw()
-fig2.savefig(outpath + 'array_parameters_mseed_plot_degraded.png', bbox_inches='tight')
-
+fig2.savefig(outpath + 'ap_' + dtype + day + '_mseed.png', bbox_inches='tight')
 

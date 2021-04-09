@@ -6,6 +6,7 @@ def do_wavelet(trd):
     dt = trd.stats.delta
     dj = 0.05 #scale spacing
     s0 =  0.096801331 # smallest scale
+    #s0 =  0.0096801331 # smallest scale
     omega0 = 6
     J = (np.log2(len(trd) * dt / s0)) / dj  # number of scales-1 
     mother = pycwt.Morlet(omega0)              # See https://github.com/regeirk/pycwt/blob/master/pycwt/wavelet.py 
